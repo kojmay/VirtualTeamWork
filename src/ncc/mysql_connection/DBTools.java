@@ -50,7 +50,7 @@ public class DBTools {
                 " last VARCHAR(255), " + 
                 " age INTEGER, " + 
                 " PRIMARY KEY ( id ))"; 
-        dbTool.logDB.update(sql);
+        dbTool.stdDB.update(sql);
         
         //3、插入数据
       sql = "INSERT INTO student " +
@@ -58,15 +58,15 @@ public class DBTools {
       dbTool.logDB.update(sql);
       sql = "INSERT INTO student " +
       "VALUES (101, 'Python', 'Py', 25)";
-      dbTool.logDB.update(sql);
+      dbTool.stdDB.update(sql);
       
       //4、删除数据
       sql = "delete from student where id=100";
-      dbTool.logDB.update(sql);
+      dbTool.stdDB.update(sql);
       
       //5、查找数据
       sql = "select * from student";
-      ResultSet rs = dbTool.logDB.query(sql);
+      ResultSet rs = dbTool.stdDB.query(sql);
        //Extract data from result set
       try {
           while(rs.next()){
@@ -90,8 +90,8 @@ public class DBTools {
       }
       
       //6、删除表
-      sql = "drop table student";
-      dbTool.logDB.update(sql);
+//      sql = "drop table student";
+//      dbTool.stdDB.update(sql);
       
       //7、用完之后需关闭
       dbTool.close();

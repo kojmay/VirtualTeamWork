@@ -16,16 +16,15 @@ import java.sql.*;
 public class MySQLConnection {
     //JDBC driver name and database url
     static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
-    public static String DB_URL = "jdbc:mysql://localhost/";
+    public String DB_URL = "jdbc:mysql://localhost/";
 
     //Database credentials
-    public static String username = "";
-    public static String password = "";
-    public static String db_name = "";
-    public static Connection conn = null;
-    public static Statement stmt = null;
+    public String username = "";
+    public String password = "";
+    public String db_name = "";
+    public Connection conn = null;
+    public Statement stmt = null;
 
-    // 单例方法
     public MySQLConnection(String dbname, String uname, String pwd) {
         db_name = dbname;
         DB_URL = String.format("%s%s?serverTimezone=UTC", DB_URL, db_name);
@@ -63,14 +62,14 @@ public class MySQLConnection {
     }
     
     // 获取数据库连接
-    public static Statement getStmt() {
+    public Statement getStmt() {
         if(stmt == null) {
             try {
                 Class.forName(JDBC_DRIVER);
-                System.out.println("Connecting to database。。。");
+                System.out.println("Connecting to database " + db_name +" ...");
                 conn = DriverManager.getConnection(DB_URL, username, password);
                 stmt = conn.createStatement();
-                System.out.println("Connect database successfully!");
+                System.out.println("Connect database successfully: " + DB_URL);
             }catch(SQLException se) {
                 System.out.println(db_name + " 数据库连接错误");
                 se.printStackTrace();
