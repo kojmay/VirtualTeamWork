@@ -2,12 +2,15 @@ package ncc.ps;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.*;
 
-import ncc.mysql_connection.DBTools;
+import ncc.tools.CommonToolsLib;
+import ncc.tools.DBTools;
 
 /**  
  *  System： NCC VirtualTeamWork
@@ -30,13 +33,14 @@ public class Chapter1_1_HuaweiMMETAC {
         String sql = "CREATE TABLE PS_LACandTAC " +
                     "(id int NOT NULL AUTO_INCREMENT, " + 
                     " province VARCHAR(255), " + 
-                    " type INTEGER, " + 
+                    " type VARCHAR(4), " + // LAC，TAC
                     " l1 VARCHAR(4), " + 
                     " l2 VARCHAR(4), " + 
-                    " l3 VARCHAR(4) DEFAULT NULL, " + // 默认为NULL,即l3\l4各省自主分配
-                    " l4 VARCHAR(4) DEFAULT NULL, " + 
-                    " PRIMARY KEY ( id ))"; 
+                    " l3 VARCHAR(4), " + // 默认为NULL,即l3\l4各省自主分配
+                    " l4 VARCHAR(4), " + 
+                    " PRIMARY KEY ( id )) default charset=utf8; "; 
         dbTools.stdDB.update(sql);
+        dbTools.close();
     }
     
     /* 2、读取标准表数据，并插入数据库表中，此阶段可手动插入
@@ -50,44 +54,121 @@ public class Chapter1_1_HuaweiMMETAC {
             Workbook workbook = WorkbookFactory.create(stdFile);
             // 获得工作表个数
             int sheetCount = workbook.getNumberOfSheets();
-            // 遍历整个工作表
-            for(int i = 0; i < sheetCount; i++) {
-                Sheet sheet = workbook.getSheetAt(i);
-                // 获得行数
-                int rows = sheet.getLastRowNum() + 1;
-                // 获得列数，先获得一行，在得到改行列数
-                Row tmp = sheet.getRow(0);
-                if (tmp == null){
-                   continue;
+            
+            
+            DBTools dbTools = DBTools.getInstance();
+            String sql = ""; 
+            
+            /*// 遍历第一个工作表
+            Sheet sheet = workbook.getSheetAt(0);
+            // 获得列数，先获得一行，在得到改行列数
+            Row tmp = sheet.getRow(0);
+            if (tmp == null){
+                return;
+            }
+            
+            // 读取数据
+            for (int row = 1; row < 17; row++){
+                Row r = sheet.getRow(row);
+                for (int col = 1; col < 17; col++){
+                    String cellValue = r.getCell(col).getStringCellValue();
+                    if(cellValue.length()>0) {
+                        Pattern pat = Pattern.compile("^([\u4E00-\u9FA5]+)\\d+$");
+                        Matcher mat = pat.matcher(cellValue);
+                        if(mat.matches()) {
+                            cellValue = mat.group(1);
+                        }
+                        System.out.println(Integer.toHexString(row-1).toUpperCase()+" "+ Integer.toHexString(col-1).toUpperCase()+" "+ cellValue);
+                        String l1 = Integer.toHexString(row-1).toUpperCase(), l2 = Integer.toHexString(col-1).toUpperCase();
+                        sql = String.format("insert into PS_LACandTAC(province, type, l1, l2) values(\'%s\', \'LAC\', \'%s\', \'%s\')", cellValue, l1, l2);
+                        dbTools.stdDB.update(sql);
+                    }
                 }
-                int cols = tmp.getPhysicalNumberOfCells();
-                // 读取数据
-                for (int row = 0; row < rows; row++){
-                   Row r = sheet.getRow(row);
-                   for (int col = 0; col < cols; col++){
-                       System.out.println("\n"+row+" "+ col);
-                       System.out.printf("%10s", r.getCell(col));
-                   }
-                   System.out.println();
+            }*/
+            
+            // 遍历第二个工作表
+            Sheet sheet = workbook.getSheetAt(1);
+            // 获得列数，先获得一行，在得到改行列数
+            Row tmp = sheet.getRow(0);
+            if (tmp == null){
+                return;
+            }
+            
+            // 读取数据
+            for (int row = 1; row < 17; row++){
+                Row r = sheet.getRow(row);
+                for (int col = 1; col < 17; col++){
+                    String cellValue = r.getCell(col).getStringCellValue();
+                    if(cellValue.length()>0) {
+                        Pattern pat = Pattern.compile("^([\u4E00-\u9FA5]+)\\d+$");
+                        Matcher mat = pat.matcher(cellValue);
+                        if(mat.matches()) {
+                            cellValue = mat.group(1);
+                        }
+                        System.out.println(Integer.toHexString(row-1).toUpperCase()+" "+ Integer.toHexString(col-1).toUpperCase()+" "+ cellValue);
+                        String l1 = Integer.toHexString(row-1).toUpperCase(), l2 = Integer.toHexString(col-1).toUpperCase();
+                        sql = String.format("insert into PS_LACandTAC(province, type, l1, l2) values(\'%s\', \'TAC\', \'%s\', \'%s\')", cellValue, l1, l2);
+                        dbTools.stdDB.update(sql);
+                    }
                 }
             }
+            
+            
+            dbTools.close();
+            
         }
+        
+        
     }
     
+    /* 3.在logDB日志数据库中建表
+     *      表名：PS_TACandLAC
+     *      表中属性：id（自增，主键），province（省份名），type（LAC/TAC)，l1、l2、l3、l4，Date
+     *      
+     */
+    public static void createLogTACandLAC() {
+        DBTools dbTools = DBTools.getInstance();
+        String sql = "CREATE TABLE PS_TACandLAC " +
+                    "(id int NOT NULL AUTO_INCREMENT, " + 
+                    " checkId int NOT NULL, " + 
+                    " province VARCHAR(255), " + 
+                    " type VARCHAR(4), " + // LAC，TAC
+                    " l1 VARCHAR(4), " + 
+                    " l2 VARCHAR(4), " + 
+                    " l3 VARCHAR(4), " + // 默认为NULL,即l3\l4各省自主分配
+                    " l4 VARCHAR(4), " + 
+                    " PRIMARY KEY ( id )) default charset=utf8; "; 
+        dbTools.logDB.update(sql);
+        dbTools.close();
+    }
     
-    
-    
-    // 3.现网数据表
-    
-    // 4。查表对比
+    /* 4、读取log文件，提取数据，并插入logDB数据库表中，此阶段必须自动
+     *    标准表位置：./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls
+     *    日志数据库表名：PS_TACandLAC
+     */
+    public static void analysisAndInsertLog(String path) {
+        // 1.在stdDB的CheckInfo表中插入核查信息，保留checkId 作为解析数据的一个属性
+        int checkId = CommonToolsLib.insertNewLine("first check");
+        System.out.println(checkId);
+        
+        // 2.解析日志，并存入logDB中的PS_TACandLAC
+        
+        
+    }
     
     
     public static void runCheck() throws InvalidFormatException, IOException {
         // 1.在标准表数据库中建表
-        //createLACandTACTable();
+//        createLACandTACTable();
         
         // 2.读取标准表，并插入标准表数据库
-        insertIntoPS_LACandTAC("./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls");
+//        insertIntoPS_LACandTAC("./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls");
+        
+        // 3.在logDB日志数据库中建表   表名：PS_TACandLAC
+//        createLogTACandLAC();
+        
+        // 4.
+        analysisAndInsertLog("");
 
     }
     
@@ -102,7 +183,6 @@ public class Chapter1_1_HuaweiMMETAC {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        System.out.println("hel");
     }
 
 }

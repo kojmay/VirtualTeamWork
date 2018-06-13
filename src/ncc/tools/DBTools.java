@@ -1,4 +1,4 @@
-package ncc.mysql_connection;
+package ncc.tools;
 
 /**  
  *  System： NCC
@@ -11,6 +11,8 @@ package ncc.mysql_connection;
  */
 
 import java.sql.*;
+
+import org.apache.poi.wp.usermodel.CharacterRun;
 
 import com.mysql.cj.SimpleQuery;
 
@@ -89,12 +91,14 @@ public class DBTools {
           e.printStackTrace();
       }
       
-      //6、删除表
-//      sql = "drop table student";
-//      dbTool.stdDB.update(sql);
-      
+//      //6、删除表
+////      sql = "drop table student";
+////      dbTool.stdDB.update(sql);
+//      
       //7、用完之后需关闭
       dbTool.close();
+      
+     //todo 插入省市对应表
         
     }
     

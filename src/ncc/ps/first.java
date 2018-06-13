@@ -13,8 +13,8 @@ package ncc.ps;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import ncc.mysql_connection.DBTools;
-import ncc.mysql_connection.MySQLConnection;
+import ncc.tools.DBTools;
+import ncc.tools.MySQLConnection;
 
 
 public class first {

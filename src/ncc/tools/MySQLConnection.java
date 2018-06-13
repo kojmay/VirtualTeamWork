@@ -8,7 +8,7 @@
  *   
  */
 
-package ncc.mysql_connection;
+package ncc.tools;
 
 import java.sql.*;
 
@@ -27,7 +27,7 @@ public class MySQLConnection {
 
     public MySQLConnection(String dbname, String uname, String pwd) {
         db_name = dbname;
-        DB_URL = String.format("%s%s?serverTimezone=UTC", DB_URL, db_name);
+        DB_URL = String.format("%s%s?serverTimezone=UTC&useUnicode=true&characterEncoding=utf8", DB_URL, db_name);
         username = uname;
         password = pwd;
         getStmt();
