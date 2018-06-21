@@ -1,7 +1,11 @@
 package ncc.ps;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,7 +57,7 @@ public class Chapter1_1_HuaweiMMETAC {
             // 获得工作簿
             Workbook workbook = WorkbookFactory.create(stdFile);
             // 获得工作表个数
-            int sheetCount = workbook.getNumberOfSheets();
+//            int sheetCount = workbook.getNumberOfSheets();
             
             
             DBTools dbTools = DBTools.getInstance();
@@ -143,15 +147,63 @@ public class Chapter1_1_HuaweiMMETAC {
     }
     
     /* 4、读取log文件，提取数据，并插入logDB数据库表中，此阶段必须自动
-     *    标准表位置：./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls
+     *    日志文件位置：./LogFileLib/Chapter1_1_HuaweiMMETAC/
      *    日志数据库表名：PS_TACandLAC
      */
-    public static void analysisAndInsertLog(String path) {
+    public static void analysisAndInsertLog(String filePath, String province) throws IOException{
         // 1.在stdDB的CheckInfo表中插入核查信息，保留checkId 作为解析数据的一个属性
-        int checkId = CommonToolsLib.insertNewLine("first check");
-        System.out.println(checkId);
-        
+//        int checkId = CommonToolsLib.insertNewLine("first check");
+//        System.out.println("check Id is: " + checkId);
+        int checkId = 1;
         // 2.解析日志，并存入logDB中的PS_TACandLAC
+        
+        analysisS1PAGIG(province ,filePath + "S1PAGING_1.TXT", checkId);
+        
+    }
+    
+    public static void analysisS1PAGIG(String province, String filePath, int checkId) {
+        
+        try {
+            File logFile = new File(filePath);
+            if (logFile.isFile() && logFile.exists()) {
+                InputStreamReader reader = new InputStreamReader(new FileInputStream(logFile));
+                BufferedReader bReader = new BufferedReader(reader);
+                
+                Pattern pat = Pattern.compile("(\\w{9})\\s+NB-IoT");
+                Matcher mat ;
+                String line = bReader.readLine();;
+                DBTools dbTool = DBTools.getInstance();
+                ArrayList<String> tacList = new ArrayList<>();
+                while (line != null) {
+//                    System.out.println(line);
+                    mat = pat.matcher(line);
+                    if(mat.find()) {
+                        System.out.println("#"+mat.group(1)+"#");
+                        tacList.add(mat.group(1));
+                    }
+
+                    line = bReader.readLine();
+                }
+                
+                System.out.println(tacList);
+                
+//                String l1 = mat.group(1).charAt(5) + "";
+//                String l2 = mat.group(1).charAt(6) + "";
+//                String l3 = mat.group(1).charAt(7) + "";
+//                String l4 = mat.group(1).charAt(8) + "";
+//                tacList.add(mat.group(1));
+//                dbTool.logDB.update(String.format("insert into PS_TACandLAC(checkId, province, type, l1, l2, l3, l4) values(%d, \'%s\', 'TAC', \'%s\', \'%s\', \'%s\', \'%s\')", checkId, province, l1, l2, l3, l4));
+//                System.out.println(l1+ " " + l2 + " "+ l3 + " "  + l4);
+                
+                dbTool.close();
+                
+            } else {
+                System.out.println(filePath + " 文件不存在！");
+            }
+        } catch (Exception e) {
+            // TODO: handle exception
+            System.out.println("文件读取错误！"+ e.getMessage());
+        }
         
         
     }
@@ -168,7 +220,7 @@ public class Chapter1_1_HuaweiMMETAC {
 //        createLogTACandLAC();
         
         // 4.
-        analysisAndInsertLog("");
+        analysisAndInsertLog("./LogFileLib/Chapter1_1_HuaweiMMETAC/", "湖南");
 
     }
     
