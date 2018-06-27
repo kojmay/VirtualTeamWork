@@ -18,14 +18,13 @@ import com.mysql.cj.SimpleQuery;
 
 public class DBTools {
     
-    public MySQLConnection logDB; // log 数据库连接
-    public MySQLConnection stdDB; // standard 数据库连接
+    public MySQLConnection nccDB; // log 数据库连接
+//    public MySQLConnection stdDB; // standard 数据库连接
     
     //单例模式
     private DBTools() { 
         System.out.println("init dbtools");
-        logDB = new MySQLConnection("log_lib_db", "root", "");
-        stdDB = new MySQLConnection("standard_lib_db", "root", "");
+        nccDB = new MySQLConnection("ncc_db", "root", "");
     }
     private static final DBTools dbtools = new DBTools();  
     //静态工厂方法   
@@ -34,8 +33,7 @@ public class DBTools {
     }
     
     public void close() {
-        logDB.closeConnection();
-        stdDB.closeConnection();
+        nccDB.closeConnection();
     }
     
     /*
@@ -52,23 +50,23 @@ public class DBTools {
                 " last VARCHAR(255), " + 
                 " age INTEGER, " + 
                 " PRIMARY KEY ( id ))"; 
-        dbTool.stdDB.update(sql);
+        dbTool.nccDB.update(sql);
         
         //3、插入数据
       sql = "INSERT INTO student " +
       "VALUES (100, 'C++', 'Li', 18)";
-      dbTool.logDB.update(sql);
+      dbTool.nccDB.update(sql);
       sql = "INSERT INTO student " +
       "VALUES (101, 'Python', 'Py', 25)";
-      dbTool.stdDB.update(sql);
+      dbTool.nccDB.update(sql);
       
       //4、删除数据
       sql = "delete from student where id=100";
-      dbTool.stdDB.update(sql);
+      dbTool.nccDB.update(sql);
       
       //5、查找数据
       sql = "select * from student";
-      ResultSet rs = dbTool.stdDB.query(sql);
+      ResultSet rs = dbTool.nccDB.query(sql);
        //Extract data from result set
       try {
           while(rs.next()){

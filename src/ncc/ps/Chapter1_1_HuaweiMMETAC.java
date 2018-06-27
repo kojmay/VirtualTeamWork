@@ -47,8 +47,8 @@ public class Chapter1_1_HuaweiMMETAC {
                     " l3 VARCHAR(4), " + // 默认为NULL,即l3\l4各省自主分配
                     " l4 VARCHAR(4), " + 
                     " PRIMARY KEY ( id )) default charset=utf8; "; 
-        dbTools.stdDB.update(sql);
-        dbTools.close();
+        dbTools.nccDB.update(sql);
+//        dbTools.close();
     }
     
     /* 2、读取标准表数据，并插入数据库表中，此阶段可手动插入
@@ -67,7 +67,7 @@ public class Chapter1_1_HuaweiMMETAC {
             DBTools dbTools = DBTools.getInstance();
             String sql = ""; 
             
-            /*// 遍历第一个工作表
+            // 遍历第一个工作表
             Sheet sheet = workbook.getSheetAt(0);
             // 获得列数，先获得一行，在得到改行列数
             Row tmp = sheet.getRow(0);
@@ -88,12 +88,13 @@ public class Chapter1_1_HuaweiMMETAC {
                         }
                         System.out.println(Integer.toHexString(row-1).toUpperCase()+" "+ Integer.toHexString(col-1).toUpperCase()+" "+ cellValue);
                         String l1 = Integer.toHexString(row-1).toUpperCase(), l2 = Integer.toHexString(col-1).toUpperCase();
-                        sql = String.format("insert into PS_LACandTAC(province, type, l1, l2) values(\'%s\', \'LAC\', \'%s\', \'%s\')", cellValue, l1, l2);
-                        dbTools.stdDB.update(sql);
+                        sql = String.format("insert into STD_PS_LACandTAC(province, type, l1, l2) values(\'%s\', \'LAC\', \'%s\', \'%s\')", cellValue, l1, l2);
+                        dbTools.nccDB.update(sql);
                     }
                 }
-            }*/
+            }
             
+            /*
             // 遍历第二个工作表
             Sheet sheet = workbook.getSheetAt(1);
             // 获得列数，先获得一行，在得到改行列数
@@ -115,13 +116,13 @@ public class Chapter1_1_HuaweiMMETAC {
                         }
                         System.out.println(Integer.toHexString(row-1).toUpperCase()+" "+ Integer.toHexString(col-1).toUpperCase()+" "+ cellValue);
                         String l1 = Integer.toHexString(row-1).toUpperCase(), l2 = Integer.toHexString(col-1).toUpperCase();
-                        sql = String.format("insert into PS_LACandTAC(province, type, l1, l2) values(\'%s\', \'TAC\', \'%s\', \'%s\')", cellValue, l1, l2);
-                        dbTools.stdDB.update(sql);
+                        sql = String.format("insert into STD_PS_LACandTAC(province, type, l1, l2) values(\'%s\', \'TAC\', \'%s\', \'%s\')", cellValue, l1, l2);
+                        dbTools.nccDB.update(sql);
                     }
                 }
             }
             
-            
+            */
             dbTools.close();
             
         }
@@ -136,7 +137,7 @@ public class Chapter1_1_HuaweiMMETAC {
      */
     public static void createLogTACandLAC() {
         DBTools dbTools = DBTools.getInstance();
-        String sql = "CREATE TABLE PS_TACandLAC " +
+        String sql = "CREATE TABLE CU_PS_TACandLAC " +
                     "(id int NOT NULL AUTO_INCREMENT, " + 
                     " checkId int NOT NULL, " + 
                     " province VARCHAR(255), " + 
@@ -146,8 +147,8 @@ public class Chapter1_1_HuaweiMMETAC {
                     " l3 VARCHAR(4), " + // 默认为NULL,即l3\l4各省自主分配
                     " l4 VARCHAR(4), " + 
                     " PRIMARY KEY ( id )) default charset=utf8; "; 
-        dbTools.logDB.update(sql);
-        dbTools.close();
+        dbTools.nccDB.update(sql);
+//        dbTools.close();
     }
     
     /* 4、读取log文件，提取数据，并插入logDB数据库表中，此阶段必须自动
@@ -198,7 +199,7 @@ public class Chapter1_1_HuaweiMMETAC {
 //                dbTool.logDB.update(String.format("insert into PS_TACandLAC(checkId, province, type, l1, l2, l3, l4) values(%d, \'%s\', 'TAC', \'%s\', \'%s\', \'%s\', \'%s\')", checkId, province, l1, l2, l3, l4));
 //                System.out.println(l1+ " " + l2 + " "+ l3 + " "  + l4);
                 
-                ResultSet rs = dbTool.stdDB.query(String.format("select * from PS_LACandTAC where province = \'%s\' and type = \'TAC\'", province));
+                ResultSet rs = dbTool.nccDB.query(String.format("select * from STD_PS_LACandTAC where province = \'%s\' and type = \'TAC\'", province));
                 Set<String> tacHeaderSet = new HashSet<String>();
                 int tacLen = 5;
                 try {
@@ -256,7 +257,7 @@ public class Chapter1_1_HuaweiMMETAC {
     
     public static void runCheck() throws InvalidFormatException, IOException {
         // 1.在标准表数据库中建表
-        createStdLACandTACTable();
+//        createStdLACandTACTable();
         
         // 2.读取标准表，并插入标准表数据库
         insertIntoPS_LACandTAC("./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls");
