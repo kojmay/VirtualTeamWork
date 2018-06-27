@@ -5,7 +5,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,9 +36,9 @@ public class Chapter1_1_HuaweiMMETAC {
      *      表名：PS_LACandTAC
      *      表中属性：id（自增，主键），province（省份名），type（LAC/TAC)，l1、l2、l3、l4
      */
-    public static void createLACandTACTable() {
+    public static void createStdLACandTACTable() {
         DBTools dbTools = DBTools.getInstance();
-        String sql = "CREATE TABLE PS_LACandTAC " +
+        String sql = "CREATE TABLE STD_PS_LACandTAC " +
                     "(id int NOT NULL AUTO_INCREMENT, " + 
                     " province VARCHAR(255), " + 
                     " type VARCHAR(4), " + // LAC，TAC
@@ -158,7 +162,6 @@ public class Chapter1_1_HuaweiMMETAC {
         // 2.解析日志，并存入logDB中的PS_TACandLAC
         
         analysisS1PAGIG(province ,filePath + "S1PAGING_1.TXT", checkId);
-        
     }
     
     public static void analysisS1PAGIG(String province, String filePath, int checkId) {
@@ -178,13 +181,13 @@ public class Chapter1_1_HuaweiMMETAC {
 //                    System.out.println(line);
                     mat = pat.matcher(line);
                     if(mat.find()) {
-                        System.out.println("#"+mat.group(1)+"#");
+//                        System.out.println("#"+mat.group(1)+"#");
                         tacList.add(mat.group(1));
                     }
-
                     line = bReader.readLine();
                 }
-                
+                bReader.close();
+                reader.close();
                 System.out.println(tacList);
                 
 //                String l1 = mat.group(1).charAt(5) + "";
@@ -194,6 +197,48 @@ public class Chapter1_1_HuaweiMMETAC {
 //                tacList.add(mat.group(1));
 //                dbTool.logDB.update(String.format("insert into PS_TACandLAC(checkId, province, type, l1, l2, l3, l4) values(%d, \'%s\', 'TAC', \'%s\', \'%s\', \'%s\', \'%s\')", checkId, province, l1, l2, l3, l4));
 //                System.out.println(l1+ " " + l2 + " "+ l3 + " "  + l4);
+                
+                ResultSet rs = dbTool.stdDB.query(String.format("select * from PS_LACandTAC where province = \'%s\' and type = \'TAC\'", province));
+                Set<String> tacHeaderSet = new HashSet<String>();
+                int tacLen = 5;
+                try {
+                    while(rs.next()){
+                        String l1 = rs.getString("l1");
+                        String l2 = rs.getString("l2");
+                        String l3 = rs.getString("l3");
+                        String l4 = rs.getString("l4");
+                        
+                        if (l3 == null ) {
+                            tacHeaderSet.add("46000"+l1+l2);
+                            tacLen = 7;
+                        } else if(l4 == null){
+                            tacHeaderSet.add("46000"+l1+l2+l3);
+                            tacLen = 8;
+                        } else {
+                            tacHeaderSet.add("46000"+l1+l2+l3+l4);
+                            tacLen = 9;
+                        }
+                    }
+                    System.out.println(tacHeaderSet);
+                    rs.close();
+                    
+                    // 开始核查部分
+                    Set<String> unecessarySet = new HashSet<>();
+                    int rightNum = 0;
+                    for (String tacItem : tacList) {
+                        if (tacHeaderSet.contains(tacItem.substring(0, tacLen))) {
+                            rightNum ++;
+                        }else {
+                            unecessarySet.add(tacItem);
+                        }
+                    }
+                    System.out.printf("一共  %d 条， 其中  %d 正确， %d 冗余。", rightNum+unecessarySet.size(), rightNum, unecessarySet.size());
+                    
+                } catch (SQLException e) {
+                    rs.close();
+                    e.printStackTrace();
+                }
+                
                 
                 dbTool.close();
                 
@@ -211,16 +256,16 @@ public class Chapter1_1_HuaweiMMETAC {
     
     public static void runCheck() throws InvalidFormatException, IOException {
         // 1.在标准表数据库中建表
-//        createLACandTACTable();
+        createStdLACandTACTable();
         
         // 2.读取标准表，并插入标准表数据库
-//        insertIntoPS_LACandTAC("./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls");
+        insertIntoPS_LACandTAC("./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls");
         
         // 3.在logDB日志数据库中建表   表名：PS_TACandLAC
 //        createLogTACandLAC();
         
         // 4.
-        analysisAndInsertLog("./LogFileLib/Chapter1_1_HuaweiMMETAC/", "湖南");
+//        analysisAndInsertLog("./LogFileLib/Chapter1_1_HuaweiMMETAC/", "湖南");
 
     }
     
