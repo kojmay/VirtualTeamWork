@@ -38,35 +38,31 @@ public class Chapter1_1_HuaweiMMETAC {
      */
     public static void createStdLACandTACTable() {
         DBTools dbTools = DBTools.getInstance();
-        String sql = "CREATE TABLE STD_PS_LACandTAC " +
-                    "(id int NOT NULL AUTO_INCREMENT, " + 
-                    " province VARCHAR(255), " + 
+        String sql = "CREATE TABLE std_ps_lacandtac " +
+                    "(id int NOT NULL AUTO_INCREMENT PRIMARY KEY, " + 
+                    " provinceID VARCHAR(20), " + 
                     " type VARCHAR(4), " + // LAC，TAC
                     " l1 VARCHAR(4), " + 
                     " l2 VARCHAR(4), " + 
                     " l3 VARCHAR(4), " + // 默认为NULL,即l3\l4各省自主分配
                     " l4 VARCHAR(4), " + 
-                    " PRIMARY KEY ( id )) default charset=utf8; "; 
+                    " FOREIGN KEY (provinceID) REFERENCES province_info(provinceID)) charset utf8;";
         dbTools.nccDB.update(sql);
-//        dbTools.close();
+        dbTools.close();
     }
     
     /* 2、读取标准表数据，并插入数据库表中，此阶段可手动插入
      *    标准表位置：./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls
-     *    标准数据库表名：PS_LACandTAC
+     *    标准数据库表名：STD_PS_LACandTAC
      */
-    public static void insertIntoPS_LACandTAC(String path) throws IOException, InvalidFormatException{
+    public static void insertIntoSTD_PS_LACandTAC(String path) throws IOException, InvalidFormatException{
         if (path.endsWith(".xls")) {
             File stdFile = new File(path);
             // 获得工作簿
             Workbook workbook = WorkbookFactory.create(stdFile);
-            // 获得工作表个数
-//            int sheetCount = workbook.getNumberOfSheets();
-            
-            
+           
             DBTools dbTools = DBTools.getInstance();
             String sql = ""; 
-            
             // 遍历第一个工作表
             Sheet sheet = workbook.getSheetAt(0);
             // 获得列数，先获得一行，在得到改行列数
@@ -86,19 +82,36 @@ public class Chapter1_1_HuaweiMMETAC {
                         if(mat.matches()) {
                             cellValue = mat.group(1);
                         }
-                        System.out.println(Integer.toHexString(row-1).toUpperCase()+" "+ Integer.toHexString(col-1).toUpperCase()+" "+ cellValue);
-                        String l1 = Integer.toHexString(row-1).toUpperCase(), l2 = Integer.toHexString(col-1).toUpperCase();
-                        sql = String.format("insert into STD_PS_LACandTAC(province, type, l1, l2) values(\'%s\', \'LAC\', \'%s\', \'%s\')", cellValue, l1, l2);
-                        dbTools.nccDB.update(sql);
+                        
+                        sql = String.format("select  * from Province_Info where provinceName like \'%s%%\'", cellValue);
+                        ResultSet resultSet = dbTools.nccDB.query(sql);
+                        
+                        try {
+                            while (resultSet.next()) {
+                                String provinceID = resultSet.getString("provinceID");
+                                String provinceName = resultSet.getString("provinceName");
+                                System.out.println(provinceName+"  , "+ provinceID);
+
+                                System.out.println(Integer.toHexString(row-1).toUpperCase()+" "+ Integer.toHexString(col-1).toUpperCase()+" "+ cellValue);
+                                String l1 = Integer.toHexString(row-1).toUpperCase(), l2 = Integer.toHexString(col-1).toUpperCase();
+                                sql = String.format("insert into STD_PS_LACandTAC(provinceID, type, l1, l2) values(\'%s\', \'LAC\', \'%s\', \'%s\')", provinceID, l1, l2);
+                                dbTools.nccDB.update(sql);
+                            }
+                            resultSet.close();
+                        } catch (SQLException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                        
                     }
                 }
             }
             
-            /*
+            
             // 遍历第二个工作表
-            Sheet sheet = workbook.getSheetAt(1);
+            sheet = workbook.getSheetAt(1);
             // 获得列数，先获得一行，在得到改行列数
-            Row tmp = sheet.getRow(0);
+            tmp = sheet.getRow(0);
             if (tmp == null){
                 return;
             }
@@ -114,75 +127,94 @@ public class Chapter1_1_HuaweiMMETAC {
                         if(mat.matches()) {
                             cellValue = mat.group(1);
                         }
-                        System.out.println(Integer.toHexString(row-1).toUpperCase()+" "+ Integer.toHexString(col-1).toUpperCase()+" "+ cellValue);
-                        String l1 = Integer.toHexString(row-1).toUpperCase(), l2 = Integer.toHexString(col-1).toUpperCase();
-                        sql = String.format("insert into STD_PS_LACandTAC(province, type, l1, l2) values(\'%s\', \'TAC\', \'%s\', \'%s\')", cellValue, l1, l2);
-                        dbTools.nccDB.update(sql);
+                        
+                        sql = String.format("select  * from Province_Info where provinceName like \'%s%%\'", cellValue);
+                        ResultSet resultSet = dbTools.nccDB.query(sql);
+
+                        try {
+                            while (resultSet.next()) {
+                                String provinceID = resultSet.getString("provinceID");
+                                String provinceName = resultSet.getString("provinceName");
+                                System.out.println(provinceName+"  , "+ provinceID);
+
+                                System.out.println(Integer.toHexString(row-1).toUpperCase()+" "+ Integer.toHexString(col-1).toUpperCase()+" "+ cellValue);
+                                String l1 = Integer.toHexString(row-1).toUpperCase(), l2 = Integer.toHexString(col-1).toUpperCase();
+                                sql = String.format("insert into STD_PS_LACandTAC(provinceID, type, l1, l2) values(\'%s\', \'TAC\', \'%s\', \'%s\')", provinceID, l1, l2);
+
+                            }
+                            dbTools.nccDB.update(sql); 
+                        }catch (SQLException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                        }
                     }
                 }
+
+
+                dbTools.close();
             }
-            
-            */
-            dbTools.close();
-            
+
+
         }
-        
-        
-    }
-    
-    /* 3.在logDB日志数据库中建表
-     *      表名：PS_TACandLAC
+
+    /* 3.在数据库中建表
+     *      表名：cu_ps_lacandtac
      *      表中属性：id（自增，主键），province（省份名），type（LAC/TAC)，l1、l2、l3、l4，Date
-     *      
      */
-    public static void createLogTACandLAC() {
+    public static void createCUTACandLAC() {
         DBTools dbTools = DBTools.getInstance();
-        String sql = "CREATE TABLE CU_PS_TACandLAC " +
-                    "(id int NOT NULL AUTO_INCREMENT, " + 
-                    " checkId int NOT NULL, " + 
-                    " province VARCHAR(255), " + 
+        String sql = "CREATE TABLE cu_ps_lacandtac " +
+                    "(id int NOT NULL AUTO_INCREMENT PRIMARY KEY, " + 
+                    " checkID int NOT NULL, " + 
+                    " provinceID VARCHAR(20), " + 
                     " type VARCHAR(4), " + // LAC，TAC
                     " l1 VARCHAR(4), " + 
                     " l2 VARCHAR(4), " + 
                     " l3 VARCHAR(4), " + // 默认为NULL,即l3\l4各省自主分配
                     " l4 VARCHAR(4), " + 
-                    " PRIMARY KEY ( id )) default charset=utf8; "; 
+                    " FOREIGN KEY (provinceID) REFERENCES province_info(provinceID)) charset utf8;";
         dbTools.nccDB.update(sql);
 //        dbTools.close();
     }
     
-    /* 4、读取log文件，提取数据，并插入logDB数据库表中，此阶段必须自动
-     *    日志文件位置：./LogFileLib/Chapter1_1_HuaweiMMETAC/
-     *    日志数据库表名：PS_TACandLAC
+    /* 4、读取现网配置文件，提取数据，并插入数据库表中，此阶段必须自动
+     *    filePath：日志文件位置
+     *    provinceId：省公司ID
+     *    checkId： 核查操作的ID，此ID唯一标识一次核查任务
+     *    日志数据库表名：cu_ps_lacandtac
      */
-    public static void analysisAndInsertLog(String filePath, String province) throws IOException{
-        // 1.在stdDB的CheckInfo表中插入核查信息，保留checkId 作为解析数据的一个属性
-//        int checkId = CommonToolsLib.insertNewLine("first check");
-//        System.out.println("check Id is: " + checkId);
-        int checkId = 1;
-        // 2.解析日志，并存入logDB中的PS_TACandLAC
+    public static void analysisAndInsertLog(String filePath, String provinceId, int checkId) throws IOException{
+        // 1.解析  华为现网NB TAC的  日志，并存入cu_ps_lacandtac
+        analysisS1PAGIG(provinceId ,filePath + "S1PAGING_1.TXT", checkId);
+        // 2.解析  华为现网NB TAC的  日志，并存入cu_ps_lacandtac
+        analysisLSTAILAI(provinceId ,filePath + "S1PAGING_1.TXT", checkId);
         
-        analysisS1PAGIG(province ,filePath + "S1PAGING_1.TXT", checkId);
     }
     
-    public static void analysisS1PAGIG(String province, String filePath, int checkId) {
+    
+    /* 4-1: 解析 华为现网NB TAC的 日志，并存入 cu_ps_lacandtac中 
+     *    filePath：日志文件位置
+     *    provinceId：省公司ID
+     *    checkId： 核查操作的ID，此ID唯一标识一次核查任务
+     */
+    public static void analysisS1PAGIG(String provinceID, String fileName, int checkId) {
         
         try {
-            File logFile = new File(filePath);
+            File logFile = new File(fileName);
             if (logFile.isFile() && logFile.exists()) {
                 InputStreamReader reader = new InputStreamReader(new FileInputStream(logFile));
                 BufferedReader bReader = new BufferedReader(reader);
                 
                 Pattern pat = Pattern.compile("(\\w{9})\\s+NB-IoT");
                 Matcher mat ;
-                String line = bReader.readLine();;
+                String line = bReader.readLine();
                 DBTools dbTool = DBTools.getInstance();
                 ArrayList<String> tacList = new ArrayList<>();
                 while (line != null) {
 //                    System.out.println(line);
                     mat = pat.matcher(line);
                     if(mat.find()) {
-//                        System.out.println("#"+mat.group(1)+"#");
                         tacList.add(mat.group(1));
                     }
                     line = bReader.readLine();
@@ -191,14 +223,25 @@ public class Chapter1_1_HuaweiMMETAC {
                 reader.close();
                 System.out.println(tacList);
                 
-//                String l1 = mat.group(1).charAt(5) + "";
-//                String l2 = mat.group(1).charAt(6) + "";
-//                String l3 = mat.group(1).charAt(7) + "";
-//                String l4 = mat.group(1).charAt(8) + "";
-//                tacList.add(mat.group(1));
+                String insertSQL = "insert into cu_ps_lacandtac(checkId, provinceId, type, l1, l2, l3, l4) values ";
+                String l1, l2, l3, l4;
+                for (String l_item : tacList) {
+                    l1 = l_item.substring(5, 6);
+                    l2 = l_item.substring(6, 7);
+                    l3 = l_item.substring(7, 8);
+                    l4 = l_item.substring(8, 9);
+//                    System.out.println(l_item + " " + l1+ " " + l2 + " "+ l3 + " "  + l4);
+                    insertSQL += String.format("( %d, \"%s\", \"TAC\", \"%s\", \"%s\", \"%s\", \"%s\" ),", checkId, provinceID, l1, l2, l3, l4);
+                }
+                insertSQL = insertSQL.substring(0, insertSQL.length()-1) + ";";
+                System.out.println(insertSQL);
+                DBTools dbTools = DBTools.getInstance();
+                dbTool.nccDB.update(insertSQL);
+                
 //                dbTool.logDB.update(String.format("insert into PS_TACandLAC(checkId, province, type, l1, l2, l3, l4) values(%d, \'%s\', 'TAC', \'%s\', \'%s\', \'%s\', \'%s\')", checkId, province, l1, l2, l3, l4));
 //                System.out.println(l1+ " " + l2 + " "+ l3 + " "  + l4);
                 
+                /*
                 ResultSet rs = dbTool.nccDB.query(String.format("select * from STD_PS_LACandTAC where province = \'%s\' and type = \'TAC\'", province));
                 Set<String> tacHeaderSet = new HashSet<String>();
                 int tacLen = 5;
@@ -239,34 +282,41 @@ public class Chapter1_1_HuaweiMMETAC {
                     rs.close();
                     e.printStackTrace();
                 }
-                
+                */
                 
                 dbTool.close();
                 
             } else {
-                System.out.println(filePath + " 文件不存在！");
+                System.out.println(fileName + " 文件不存在！");
             }
         } catch (Exception e) {
             // TODO: handle exception
             System.out.println("文件读取错误！"+ e.getMessage());
         }
-        
+    }
+    
+    /* 4-1: 解析 华为现网NB TAC的 日志，并存入 cu_ps_lacandtac中 
+     *    filePath：日志文件位置
+     *    provinceId：省公司ID
+     *    checkId： 核查操作的ID，此ID唯一标识一次核查任务
+     */
+    public static void analysisLSTAILAI(String provinceID, String fileName, int checkId) {
         
     }
     
     
     public static void runCheck() throws InvalidFormatException, IOException {
+        
         // 1.在标准表数据库中建表
 //        createStdLACandTACTable();
+        // 2.在标准表中插入标准数据
+//        insertIntoSTD_PS_LACandTAC("./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls");
         
-        // 2.读取标准表，并插入标准表数据库
-        insertIntoPS_LACandTAC("./StdFileLib/Chapter1_1_LAC原始分配与NB TAC分配明细表.xls");
+        // 3.在建现网数据表   表名：cu_ps_lacandtac
+//        createCUTACandLAC();
         
-        // 3.在logDB日志数据库中建表   表名：PS_TACandLAC
-//        createLogTACandLAC();
-        
-        // 4.
-//        analysisAndInsertLog("./LogFileLib/Chapter1_1_HuaweiMMETAC/", "湖南");
+        // 4.分析现网数据文件，并存入cu_ps_lacandtac
+        analysisAndInsertLog("./CuFileLib/Chapter1_1_HuaweiMMETAC/", "731", 1);
 
     }
     

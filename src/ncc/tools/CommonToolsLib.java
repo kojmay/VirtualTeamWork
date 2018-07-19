@@ -2,8 +2,6 @@ package ncc.tools;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -15,12 +13,14 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 public class CommonToolsLib {
     
-    public static void createCheckInfoTable() {
+    
+    
+   /* public static void createCheckInfoTable() {
         
-        /* 1、在stdDB标准表数据库中建表
+         1、在stdDB标准表数据库中建表
          *      表名：CheckInfo，记录核查信息
          *      表中属性：checkId（自增，主键），checkDescribe（核查既简单描述），checkDate（检查日期，默认为当前时间）
-         */
+         
         DBTools dbTools = DBTools.getInstance();
         String sql = "CREATE TABLE CheckInfo " +
                     "(checkId int NOT NULL AUTO_INCREMENT, " + 
@@ -51,7 +51,7 @@ public class CommonToolsLib {
         }
         dbTools.close();
         return checkId;
-    }
+    }*/
     
     
     /*  在nccDB数据库中建表 ProvinceInfo
@@ -63,7 +63,7 @@ public class CommonToolsLib {
          *      表中属性：province_ID（主键, 省份编码），province_name（省份名）
          */
         DBTools dbTools = DBTools.getInstance();
-        String sql = "CREATE TABLE Province_Info " +
+        String sql = "CREATE TABLE province_info " +
                     "(provinceID varchar(20) NOT NULL, " + 
                     " provinceName varchar(64), " + 
                     " PRIMARY KEY ( provinceID )) default charset=utf8; "; 
@@ -91,7 +91,7 @@ public class CommonToolsLib {
         }
         
         // 读取数据
-        for (int row = 0; row < sheet.getLastRowNum(); row++){
+        for (int row = 0; row <= sheet.getLastRowNum(); row++){
             Row r = sheet.getRow(row);
             r.getCell(0).setCellType(Cell.CELL_TYPE_STRING); // 将cell转换为string格式，以便于读取
             String idCellValue = r.getCell(0).getStringCellValue(); // province id
@@ -108,16 +108,11 @@ public class CommonToolsLib {
         //1、建省份编码表： ProvinceInfo，并插入数据
         try {
             createProvinceTable();
-//            insertProvinceInfo("./StdFileLib/省份码表.xls");
+            
         } catch (EncryptedDocumentException | InvalidFormatException | IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
-//      createCheckInfoTable();
-
-
-        
     }
 
 }
