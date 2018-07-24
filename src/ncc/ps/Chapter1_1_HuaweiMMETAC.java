@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.security.PublicKey;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -30,6 +31,68 @@ import ncc.tools.DBTools;
  *   
  */
 
+
+/*
+ * 数据库中的数据类
+ */
+class HuaweiMMETACObject{
+    
+    public int id;
+    public int checkID;
+    public String provinceID;
+    public String type;
+    public String l1, l2, l3, l4;
+    
+    public HuaweiMMETACObject(int id, int checkID, String provinceID, String type, String l1, String l2, String l3, String l4) {
+        this.id = id;
+        this.checkID = checkID;
+        this.provinceID = provinceID;
+        this.type = type;
+        this.l1 = l1;
+        this.l2 = l2;
+        this.l3 = l3;
+        this.l4 = l4;
+    }
+    
+    public int getId() {
+        return id;
+    }
+    
+    public int getCheckID() {
+        return checkID;
+    }
+
+    public String getProvinceID() {
+        return provinceID;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getL1() {
+        return l1;
+    }
+
+    public String getL2() {
+        return l2;
+    }
+
+    public String getL3() {
+        return l3;
+    }
+
+    public String getL4() {
+        return l4;
+    }
+    
+    public String getInfo() {
+        return String.format("id:%d \t checkID:%d \t provinceID:%s \t type:%s \t l1:%s \t l2:%s \t l3:%s \t l4:%s ", this.id, this.checkID, this.provinceID, this.type, this.l1, this.l2, this.l3, this.l4);
+    }
+
+}
+
+
 public class Chapter1_1_HuaweiMMETAC {
     
     /* 1、在stdDB标准表数据库中建表
@@ -48,7 +111,7 @@ public class Chapter1_1_HuaweiMMETAC {
                     " l4 VARCHAR(4), " + 
                     " FOREIGN KEY (provinceID) REFERENCES province_info(provinceID)) charset utf8;";
         dbTools.nccDB.update(sql);
-        dbTools.close();
+//        dbTools.close();
     }
     
     /* 2、读取标准表数据，并插入数据库表中，此阶段可手动插入
@@ -152,7 +215,7 @@ public class Chapter1_1_HuaweiMMETAC {
                 }
 
 
-                dbTools.close();
+//                dbTools.close();
             }
 
 
@@ -186,19 +249,22 @@ public class Chapter1_1_HuaweiMMETAC {
      */
     public static void analysisAndInsertLog(String filePath, String provinceId, int checkId) throws IOException{
         // 1.解析  华为现网NB TAC的  日志，并存入cu_ps_lacandtac
-        analysisS1PAGIG(provinceId ,filePath + "S1PAGING_1.TXT", checkId);
-        // 2.解析  华为现网NB TAC的  日志，并存入cu_ps_lacandtac
-        analysisLSTAILAI(provinceId ,filePath + "S1PAGING_1.TXT", checkId);
-        
+        analysisLACandTACFile(provinceId ,filePath + "S1PAGING_1.TXT", checkId, "(\\w{9})\\s+NB-IoT", "TAC");
+        // 2.解析  华为现网LAC数据的  日志 LSTTAILAI，并存入cu_ps_lacandtac
+        analysisLACandTACFile(provinceId ,filePath + "LSTTAILAI_1.txt", checkId, "\\s(\\w{9})$", "LAC");
+        // 3.解析  华为现网LAC数据的  日志 LST_LAIVLR_1 ，并存入cu_ps_lacandtac
+        analysisLACandTACFile(provinceId ,filePath + "LST_LAIVLR_1.txt", checkId, "^\\s(\\w{9})", "LAC");
     }
     
     
-    /* 4-1: 解析 华为现网NB TAC的 日志，并存入 cu_ps_lacandtac中 
+    /* 4: 解析 华为现网NB TAC的 日志，并存入 cu_ps_lacandtac中 
      *    filePath：日志文件位置
      *    provinceId：省公司ID
      *    checkId： 核查操作的ID，此ID唯一标识一次核查任务
+     *    regex: 使用的正则表达式
+     *    type: LAC / TAC
      */
-    public static void analysisS1PAGIG(String provinceID, String fileName, int checkId) {
+    public static void analysisLACandTACFile(String provinceID, String fileName, int checkId, String regex, String type) {
         
         try {
             File logFile = new File(fileName);
@@ -206,7 +272,7 @@ public class Chapter1_1_HuaweiMMETAC {
                 InputStreamReader reader = new InputStreamReader(new FileInputStream(logFile));
                 BufferedReader bReader = new BufferedReader(reader);
                 
-                Pattern pat = Pattern.compile("(\\w{9})\\s+NB-IoT");
+                Pattern pat = Pattern.compile(regex);
                 Matcher mat ;
                 String line = bReader.readLine();
                 DBTools dbTool = DBTools.getInstance();
@@ -215,6 +281,7 @@ public class Chapter1_1_HuaweiMMETAC {
 //                    System.out.println(line);
                     mat = pat.matcher(line);
                     if(mat.find()) {
+//                        System.out.println(mat.group(1));
                         tacList.add(mat.group(1));
                     }
                     line = bReader.readLine();
@@ -231,12 +298,13 @@ public class Chapter1_1_HuaweiMMETAC {
                     l3 = l_item.substring(7, 8);
                     l4 = l_item.substring(8, 9);
 //                    System.out.println(l_item + " " + l1+ " " + l2 + " "+ l3 + " "  + l4);
-                    insertSQL += String.format("( %d, \"%s\", \"TAC\", \"%s\", \"%s\", \"%s\", \"%s\" ),", checkId, provinceID, l1, l2, l3, l4);
+                    insertSQL += String.format("( %d, \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\" ),", checkId, provinceID, type, l1, l2, l3, l4);
                 }
                 insertSQL = insertSQL.substring(0, insertSQL.length()-1) + ";";
                 System.out.println(insertSQL);
                 DBTools dbTools = DBTools.getInstance();
                 dbTool.nccDB.update(insertSQL);
+                
                 
 //                dbTool.logDB.update(String.format("insert into PS_TACandLAC(checkId, province, type, l1, l2, l3, l4) values(%d, \'%s\', 'TAC', \'%s\', \'%s\', \'%s\', \'%s\')", checkId, province, l1, l2, l3, l4));
 //                System.out.println(l1+ " " + l2 + " "+ l3 + " "  + l4);
@@ -284,7 +352,7 @@ public class Chapter1_1_HuaweiMMETAC {
                 }
                 */
                 
-                dbTool.close();
+//                dbTool.close();
                 
             } else {
                 System.out.println(fileName + " 文件不存在！");
@@ -295,17 +363,81 @@ public class Chapter1_1_HuaweiMMETAC {
         }
     }
     
-    /* 4-1: 解析 华为现网NB TAC的 日志，并存入 cu_ps_lacandtac中 
-     *    filePath：日志文件位置
-     *    provinceId：省公司ID
-     *    checkId： 核查操作的ID，此ID唯一标识一次核查任务
+    
+    /* 5.在数据库中建表
+     *      表名：check_result_huawei_mme_tac
+     *      表中属性：id（自增，主键）, checkID(核查任务id)，correctNum(正确条数)， wrongNum(错误条数), lossNum（漏做条数）  
      */
-    public static void analysisLSTAILAI(String provinceID, String fileName, int checkId) {
-        
+    public static void createTable_check_result() {
+        DBTools dbTools = DBTools.getInstance();
+        String sql = "CREATE TABLE check_result " +
+                    "(id int NOT NULL AUTO_INCREMENT PRIMARY KEY, " + 
+                    " checkID int NOT NULL, " + 
+                    " provinceID VARCHAR(20), " + 
+                    " totalCounts int, " + 
+                    " correctNum int, " + 
+                    " wrongNum int, " + 
+                    " lossNum int, " + 
+                    " FOREIGN KEY (provinceID) REFERENCES province_info(provinceID)) charset utf8;";
+        dbTools.nccDB.update(sql);
     }
     
     
-    public static void runCheck() throws InvalidFormatException, IOException {
+    /* 6.对比标准表和现网数据，获得少做数据； 对比现网数据和标准数据，获得多做数据。
+     *      并将结果插入核查结果表 check_result
+     */
+    public static void compareData(String provinceID, int checkID ) throws SQLException {
+        DBTools dbTool = DBTools.getInstance();
+        
+        // 获取标准库数据
+        ResultSet stdRS = dbTool.nccDB.query(String.format("select * from std_ps_lacandtac where provinceID = \'%s\'", provinceID));
+        Set<HuaweiMMETACObject> stdLibSet = new HashSet<HuaweiMMETACObject>();
+        while(stdRS.next()){
+
+            int id = stdRS.getInt("id");
+            String type = stdRS.getString("type");
+            String province_ID = stdRS.getString("provinceID");
+            String l1 = stdRS.getString("l1");
+            String l2 = stdRS.getString("l2");
+            String l3 = stdRS.getString("l3");
+            String l4 = stdRS.getString("l4");
+            stdLibSet.add(new HuaweiMMETACObject(id, -1, province_ID, type, l1, l2, l3, l4));
+        }
+        
+        System.out.println("stdLibSet len: " + stdLibSet.size());
+        for (HuaweiMMETACObject item : stdLibSet) {
+            System.out.println(item.getInfo());
+        }
+        stdRS.close();
+
+        // 获取现网数据, 并存入cuLibList
+        ResultSet cuRS = dbTool.nccDB.query(String.format("select * from cu_ps_lacandtac where provinceID = \'%s\'", provinceID));
+        ArrayList<HuaweiMMETACObject> cuLibList = new ArrayList<HuaweiMMETACObject>();
+
+        while(cuRS.next()){
+
+            int id = cuRS.getInt("id");
+            String type = cuRS.getString("type");
+            int check_ID = cuRS.getInt("checkID");
+            String province_ID = cuRS.getString("provinceID");
+            String l1 = cuRS.getString("l1");
+            String l2 = cuRS.getString("l2");
+            String l3 = cuRS.getString("l3");
+            String l4 = cuRS.getString("l4");
+            cuLibList.add(new HuaweiMMETACObject(id, check_ID, province_ID, type, l1, l2, l3, l4));
+        }
+
+        System.out.println("cuLibSet len: " + cuLibList.size());
+        for (HuaweiMMETACObject item : cuLibList) {
+            System.out.println(item.getInfo());
+        }
+        cuRS.close();
+
+
+    }
+
+    
+    public static void runCheck() throws InvalidFormatException, IOException, SQLException {
         
         // 1.在标准表数据库中建表
 //        createStdLACandTACTable();
@@ -316,7 +448,14 @@ public class Chapter1_1_HuaweiMMETAC {
 //        createCUTACandLAC();
         
         // 4.分析现网数据文件，并存入cu_ps_lacandtac
-        analysisAndInsertLog("./CuFileLib/Chapter1_1_HuaweiMMETAC/", "731", 1);
+//        analysisAndInsertLog("./CuFileLib/Chapter1_1_HuaweiMMETAC/", "731", 1);
+        
+        // 5.新建核查结果表
+//        createTable_check_result();
+        
+        // 6.比较数据
+        compareData("731", 1);
+        
 
     }
     
@@ -329,6 +468,9 @@ public class Chapter1_1_HuaweiMMETAC {
             e.printStackTrace();
         } catch (IOException e) {
             // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (SQLException e) {
+            // TODO: handle exception
             e.printStackTrace();
         }
     }
