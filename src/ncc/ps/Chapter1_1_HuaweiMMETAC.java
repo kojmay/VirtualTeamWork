@@ -9,6 +9,7 @@ import java.security.PublicKey;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -32,65 +33,65 @@ import ncc.tools.DBTools;
  */
 
 
-/*
- * 数据库中的数据类
- */
-class HuaweiMMETACObject{
-    
-    public int id;
-    public int checkID;
-    public String provinceID;
-    public String type;
-    public String l1, l2, l3, l4;
-    
-    public HuaweiMMETACObject(int id, int checkID, String provinceID, String type, String l1, String l2, String l3, String l4) {
-        this.id = id;
-        this.checkID = checkID;
-        this.provinceID = provinceID;
-        this.type = type;
-        this.l1 = l1;
-        this.l2 = l2;
-        this.l3 = l3;
-        this.l4 = l4;
-    }
-    
-    public int getId() {
-        return id;
-    }
-    
-    public int getCheckID() {
-        return checkID;
-    }
-
-    public String getProvinceID() {
-        return provinceID;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getL1() {
-        return l1;
-    }
-
-    public String getL2() {
-        return l2;
-    }
-
-    public String getL3() {
-        return l3;
-    }
-
-    public String getL4() {
-        return l4;
-    }
-    
-    public String getInfo() {
-        return String.format("id:%d \t checkID:%d \t provinceID:%s \t type:%s \t l1:%s \t l2:%s \t l3:%s \t l4:%s ", this.id, this.checkID, this.provinceID, this.type, this.l1, this.l2, this.l3, this.l4);
-    }
-
-}
+///*
+// * 数据库中的数据类
+// */
+//class HuaweiMMETACObject{
+//    
+//    public int id;
+//    public int checkID;
+//    public String provinceID;
+//    public String type;
+//    public String l1, l2, l3, l4;
+//    
+//    public HuaweiMMETACObject(int id, int checkID, String provinceID, String type, String l1, String l2, String l3, String l4) {
+//        this.id = id;
+//        this.checkID = checkID;
+//        this.provinceID = provinceID;
+//        this.type = type;
+//        this.l1 = l1;
+//        this.l2 = l2;
+//        this.l3 = l3;
+//        this.l4 = l4;
+//    }
+//    
+//    public int getId() {
+//        return id;
+//    }
+//    
+//    public int getCheckID() {
+//        return checkID;
+//    }
+//
+//    public String getProvinceID() {
+//        return provinceID;
+//    }
+//
+//    public String getType() {
+//        return type;
+//    }
+//
+//    public String getL1() {
+//        return l1;
+//    }
+//
+//    public String getL2() {
+//        return l2;
+//    }
+//
+//    public String getL3() {
+//        return l3;
+//    }
+//
+//    public String getL4() {
+//        return l4;
+//    }
+//    
+//    public String getInfo() {
+//        return String.format("id:%d \t checkID:%d \t provinceID:%s \t type:%s \t l1:%s \t l2:%s \t l3:%s \t l4:%s ", this.id, this.checkID, this.provinceID, this.type, this.l1, this.l2, this.l3, this.l4);
+//    }
+//
+//}
 
 
 public class Chapter1_1_HuaweiMMETAC {
@@ -378,6 +379,7 @@ public class Chapter1_1_HuaweiMMETAC {
                     " correctNum int, " + 
                     " wrongNum int, " + 
                     " lossNum int, " + 
+                    " redundantNum int, " + 
                     " FOREIGN KEY (provinceID) REFERENCES province_info(provinceID)) charset utf8;";
         dbTools.nccDB.update(sql);
     }
@@ -391,48 +393,68 @@ public class Chapter1_1_HuaweiMMETAC {
         
         // 获取标准库数据
         ResultSet stdRS = dbTool.nccDB.query(String.format("select * from std_ps_lacandtac where provinceID = \'%s\'", provinceID));
-        Set<HuaweiMMETACObject> stdLibSet = new HashSet<HuaweiMMETACObject>();
+        HashMap<String, Integer> stdLibMap = new HashMap<>();
         while(stdRS.next()){
 
-            int id = stdRS.getInt("id");
-            String type = stdRS.getString("type");
-            String province_ID = stdRS.getString("provinceID");
+//            int id = stdRS.getInt("id");
+//            String type = stdRS.getString("type");
+//            String province_ID = stdRS.getString("provinceID");
             String l1 = stdRS.getString("l1");
             String l2 = stdRS.getString("l2");
-            String l3 = stdRS.getString("l3");
-            String l4 = stdRS.getString("l4");
-            stdLibSet.add(new HuaweiMMETACObject(id, -1, province_ID, type, l1, l2, l3, l4));
+//            String l3 = stdRS.getString("l3");
+//            String l4 = stdRS.getString("l4");
+            stdLibMap.put(l1+l2, 0);
         }
         
-        System.out.println("stdLibSet len: " + stdLibSet.size());
-        for (HuaweiMMETACObject item : stdLibSet) {
-            System.out.println(item.getInfo());
+        System.out.println("stdLibSet len: " + stdLibMap.keySet().size());
+        for (String item : stdLibMap.keySet()) {
+            System.out.println(item);
         }
         stdRS.close();
 
         // 获取现网数据, 并存入cuLibList
         ResultSet cuRS = dbTool.nccDB.query(String.format("select * from cu_ps_lacandtac where provinceID = \'%s\'", provinceID));
-        ArrayList<HuaweiMMETACObject> cuLibList = new ArrayList<HuaweiMMETACObject>();
+        ArrayList<String> cuLibList = new ArrayList<String>();
 
         while(cuRS.next()){
 
-            int id = cuRS.getInt("id");
-            String type = cuRS.getString("type");
-            int check_ID = cuRS.getInt("checkID");
-            String province_ID = cuRS.getString("provinceID");
+//            int id = cuRS.getInt("id");
+//            String type = cuRS.getString("type");
+//            int check_ID = cuRS.getInt("checkID");
+//            String province_ID = cuRS.getString("provinceID");
             String l1 = cuRS.getString("l1");
             String l2 = cuRS.getString("l2");
-            String l3 = cuRS.getString("l3");
-            String l4 = cuRS.getString("l4");
-            cuLibList.add(new HuaweiMMETACObject(id, check_ID, province_ID, type, l1, l2, l3, l4));
-        }
-
-        System.out.println("cuLibSet len: " + cuLibList.size());
-        for (HuaweiMMETACObject item : cuLibList) {
-            System.out.println(item.getInfo());
+//            String l3 = cuRS.getString("l3");
+//            String l4 = cuRS.getString("l4");
+            cuLibList.add(l1+l2);
         }
         cuRS.close();
-
+        System.out.println("cuLibSet len: " + cuLibList.size());
+        
+        int totalCount = cuLibList.size();
+        int correctNum = 0, wrongNum = 0, lossNum = 0, redundantNum = 0;
+        
+        for (String cu_item : cuLibList) {
+            if(stdLibMap.keySet().contains(cu_item)) {
+                correctNum ++;
+                stdLibMap.put(cu_item, stdLibMap.get(cu_item)+1);
+            }else {
+                redundantNum ++;
+            }
+        }
+        
+        if (stdLibMap.values().contains(0)) {
+            for(Integer val : stdLibMap.values()) {
+                if(val == 0){
+                    lossNum ++;
+                }
+            }
+        }
+        
+        System.out.println("totalCount: "+totalCount +" \t correctNum:"+correctNum+" \t wrongNum:"+wrongNum + "\t lossNum"+lossNum +" \t redundantNum:"+redundantNum);
+        
+        String insertSQL = String.format("insert into check_result(checkID, provinceID, totalCounts, correctNum, wrongNum, lossNum, redundantNum) values (%d, \'%s\', %d, %d, %d, %d, %d)", checkID, provinceID, totalCount, correctNum, wrongNum, lossNum, redundantNum);
+        dbTool.nccDB.update(insertSQL);
 
     }
 
